@@ -31,6 +31,7 @@ allprojects {
         google()
         jcenter()
         maven { url 'https://dl.bintray.com/wandersnail/androidx/' }
+        maven { url 'https://www.jitpack.io' }
     }
     // 指定编码
     tasks.withType(JavaCompile) {

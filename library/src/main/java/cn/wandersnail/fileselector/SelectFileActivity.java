@@ -10,7 +10,6 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
@@ -20,6 +19,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -583,7 +583,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         int padding = UiUtils.dp2px(8f);
         layout.setPadding(padding, 0, padding, 0);
         layout.addView(et);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog0 = new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setView(layout)
                 .setNegativeButton(textHolder.getText(TextHolder.CANCEL), null)
@@ -592,11 +592,15 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
                         callback.onInput(et.getText().toString().trim());
                     }
                 }).create();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CUPCAKE) {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.fsColorPrimary));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.fsColorPrimary));
+        dialog0.show();
+        Button okBtn = dialog0.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (okBtn != null) {
+            okBtn.setTextColor(getResources().getColor(R.color.fsColorPrimary));
         }
-        dialog.show();
+        Button cancelBtn = dialog0.getButton(AlertDialog.BUTTON_NEGATIVE);
+        if (cancelBtn != null) {
+            cancelBtn.setTextColor(getResources().getColor(R.color.fsColorPrimary));
+        }
     }
 
     private class FileListAdapter extends BaseListAdapter<Item> {

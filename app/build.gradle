@@ -30,7 +30,7 @@ dependencies {
     implementation "com.github.bumptech.glide:glide:$glide_version"
     implementation "cn.wandersnail:common-utils:$common_utils_version"
     implementation "cn.wandersnail:common-base:$common_base_version"
-    implementation 'com.github.csj-libs:fileselector-1:V1.0.1'
+//    implementation 'com.github.csj-libs:fileselector-1:V1.0.1'
 
-//    implementation project(':library')
+    implementation project(':library')
 }

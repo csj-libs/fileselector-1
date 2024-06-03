@@ -2,6 +2,7 @@ package cn.wandersnail.fileselector;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
@@ -30,6 +32,11 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
@@ -41,11 +48,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import cn.wandersnail.commons.util.ColorUtils;
 import cn.wandersnail.commons.util.FileUtils;
 import cn.wandersnail.commons.util.ShellUtils;
@@ -72,7 +74,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
     public static final String EXTRA_LANGUAGE = "LANGUAGE";
     public static final String EXTRA_SHOW_HIDDEN_FILES = "SHOW_HIDDEN_FILES";
     static FilenameFilter filenameFilter;
-    
+
     private int selectionMode = FileSelector.FILES_ONLY;
     private boolean isMultiSelect;
     private List<int[]> posList = new ArrayList<>();
@@ -109,17 +111,18 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             if (action != null && (action.equals(Intent.ACTION_MEDIA_MOUNTED) || action.equals(Intent.ACTION_MEDIA_UNMOUNTED))) {
                 File tmpCurDir = rootFile;
                 if (action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-                    String sdcardDir=Environment.getExternalStorageDirectory().getAbsolutePath();
-                    String changeDir="";
-                    if(intent.getData()!=null)
-                    {changeDir=intent.getData().getPath();}
-                    if (changeDir!=null&&!changeDir.equals(sdcardDir)) {
+                    String sdcardDir = Environment.getExternalStorageDirectory().getAbsolutePath();
+                    String changeDir = "";
+                    if (intent.getData() != null) {
+                        changeDir = intent.getData().getPath();
+                    }
+                    if (changeDir != null && !changeDir.equals(sdcardDir)) {
                         loadFiles(null);
                         posList.clear();
                         fsDirContainer.removeAllViews();
                     }
-                }else{
-                    if(tmpCurDir==null|| Objects.equals(tmpCurDir.getAbsolutePath(), "/")){
+                } else {
+                    if (tmpCurDir == null || Objects.equals(tmpCurDir.getAbsolutePath(), "/")) {
                         loadFiles(rootFile);
                         posList.clear();
                         fsDirContainer.removeAllViews();
@@ -129,7 +132,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             }
         }
     };
-    private boolean isRegistered=false;
+    private boolean isRegistered = false;
 
     public void registerBroadcastRec() {
         IntentFilter f = new IntentFilter();
@@ -138,15 +141,17 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         f.addAction("android.os.storage.action.VOLUME_STATE_CHANGED");
         f.addAction("android.intent.action.MEDIA_BAD_REMOVAL");
         f.addDataScheme("file");
-        isRegistered=true;
+        isRegistered = true;
         registerReceiver(this.mScanListener, f);
     }
-    private void unRegisterBroadcast(){
-        if(isRegistered) {
+
+    private void unRegisterBroadcast() {
+        if (isRegistered) {
             unregisterReceiver(this.mScanListener);
-            isRegistered=false;
+            isRegistered = false;
         }
     }
+
     private void assignViews() {
         fsStatusBar = findViewById(R.id.fsStatusBar);
         fsLayoutTitle = findViewById(R.id.fsLayoutTitle);
@@ -166,14 +171,14 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);        
+        super.onCreate(savedInstanceState);
         //沉浸状态栏
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         getDataFromIntent();
         setContentView(R.layout.fs_activity_select_file);
         //先检查写权限
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSON_REQUESTCODE);
         } else {
@@ -184,7 +189,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         }
 
     }
-    
+
     private void getDataFromIntent() {
         int language = getIntent().getIntExtra(EXTRA_LANGUAGE, -1);
         if (language != -1) {
@@ -219,7 +224,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         showHiddenFiles = getIntent().getBooleanExtra(EXTRA_SHOW_HIDDEN_FILES, false);
         selectorHash = getIntent().getStringExtra(EXTRA_SELECTOR_HASH);
     }
-    
+
     private Comparator<Item> itemComparator = (o1, o2) -> {
         if (o1 == null) {
             return -1;
@@ -287,7 +292,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             super.onBackPressed();
         }
     }
-    
+
     private void addDir(File file) {
         View view = getLayoutInflater().inflate(R.layout.fs_dir_view, null);
         TextView tv = view.findViewById(R.id.fsTv);
@@ -303,9 +308,9 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             }
             //清除之后的位置记录
             int[] ints = new int[2];
-            for (int i = posList.size() -1; i >= 0; i--) {
+            for (int i = posList.size() - 1; i >= 0; i--) {
                 if (cell.index < i) {
-                    ints = posList.remove(posList.size() -1);
+                    ints = posList.remove(posList.size() - 1);
                 } else {
                     break;
                 }
@@ -316,7 +321,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         });
         fsDirContainer.addView(view);
     }
-    
+
     private void initViews() {
         fsTvRoot.setText(textHolder.getText(TextHolder.ROOT));
         fsTvOk.setText(textHolder.getText(TextHolder.OK));
@@ -338,8 +343,8 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         fsLv.setOnItemLongClickListener(this);
         loadFiles(rootFile);
     }
-        
-    private void initEvents() {       
+
+    private void initEvents() {
         fsIvClose.setOnClickListener(v -> finish());
         fsIvMore.setOnClickListener(v -> showPopupWindow());
         fsIvAll.setOnClickListener(v -> switchSelectAll(!isSelectedAll));
@@ -386,7 +391,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             finish();
         });
     }
-    
+
     private void loadFiles(File dir) {
         currentPath = dir == null ? null : dir.getAbsolutePath();
         itemList.clear();
@@ -444,7 +449,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         adapter.notifyDataSetChanged();
         fsScrollView.post(() -> fsScrollView.fullScroll(ScrollView.FOCUS_RIGHT));
     }
-    
+
     private void handleFileList(File file, List<Item> dirList, List<Item> fList) {
         if (selectionMode == FileSelector.DIRECTORIES_ONLY) {
             if (file.isDirectory()) {
@@ -458,7 +463,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             }
         }
     }
-    
+
     private boolean isSelectedItem(File file) {
         for (Item item : selectItemList) {
             if (item.file.equals(file)) {
@@ -467,21 +472,21 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         }
         return false;
     }
-    
+
     private void switchSelectAll(boolean enable) {
         switchSelectAllState(enable);
         for (Item item : itemList) {
             //只全选指定类型
             if (selectionMode == FileSelector.FILES_AND_DIRECTORIES || (selectionMode == FileSelector.DIRECTORIES_ONLY &&
                     item.file.isDirectory()) || (selectionMode == FileSelector.FILES_ONLY && item.file.isFile()) ||
-            (currentPath == null && selectionMode != FileSelector.FILES_ONLY)) {
+                    (currentPath == null && selectionMode != FileSelector.FILES_ONLY)) {
                 item.checked = enable;
                 updateSelectedFileList(item, false);
             }
         }
         updateViews();
     }
-    
+
     private void switchSelectAllState(boolean selectAll) {
         isSelectedAll = selectAll;
         fsIvAll.setVisibility(isMultiSelect ? View.VISIBLE : View.INVISIBLE);
@@ -491,7 +496,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             fsIvAll.clearColorFilter();
         }
     }
-    
+
     private void updateSelectedText() {
         fsTvSelected.setText(String.format(textHolder.getText(TextHolder.VIEW_SELECTED_PATTERN), selectItemList.size()));
     }
@@ -519,12 +524,12 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             menuItems.add(textHolder.getText(TextHolder.RENAME));
             menuItems.add(textHolder.getText(TextHolder.DELETE));
             new ActionDialog(this, menuItems, position1 -> {
-                switch(position1) {
-                    case 0:	
-                        showInputDialog(textHolder.getText(TextHolder.RENAME), item.file.getName(), 
+                switch (position1) {
+                    case 0:
+                        showInputDialog(textHolder.getText(TextHolder.RENAME), item.file.getName(),
                                 null, text -> handleRenameFile(text, item));
                         break;
-                    case 1:	
+                    case 1:
                         new AlertDialog.Builder(SelectFileActivity.this)
                                 .setMessage(textHolder.getText(TextHolder.ENSURE_DELETE_PROMPT))
                                 .setNegativeButton(textHolder.getText(TextHolder.CANCEL), null)
@@ -548,15 +553,15 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         if (!file.exists()) {
             boolean b = item.file.renameTo(file);
             if (b) {
-                Toast.makeText(this, textHolder.getText(TextHolder.RENAME_SUCCESS), 
+                Toast.makeText(this, textHolder.getText(TextHolder.RENAME_SUCCESS),
                         Toast.LENGTH_SHORT).show();
                 loadFiles(new File(currentPath));
             } else {
-                Toast.makeText(this, textHolder.getText(TextHolder.RENAME_FAILED), 
+                Toast.makeText(this, textHolder.getText(TextHolder.RENAME_FAILED),
                         Toast.LENGTH_SHORT).show();
             }
         } else {
-            Toast.makeText(this, textHolder.getText(TextHolder.RENAME_FAILED), 
+            Toast.makeText(this, textHolder.getText(TextHolder.RENAME_FAILED),
                     Toast.LENGTH_SHORT).show();
         }
     }
@@ -564,7 +569,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
     private interface InputCallback {
         void onInput(String text);
     }
-        
+
     private void showInputDialog(String title, String fill, String hint, final InputCallback callback) {
         FrameLayout layout = new FrameLayout(this);
         final EditText et = new EditText(this);
@@ -578,7 +583,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         int padding = UiUtils.dp2px(8f);
         layout.setPadding(padding, 0, padding, 0);
         layout.addView(et);
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setView(layout)
                 .setNegativeButton(textHolder.getText(TextHolder.CANCEL), null)
@@ -586,7 +591,12 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
                     if (et.getText() != null && !et.getText().toString().trim().isEmpty()) {
                         callback.onInput(et.getText().toString().trim());
                     }
-                }).show();
+                }).create();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CUPCAKE) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.fsColorPrimary));
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.fsColorPrimary));
+        }
+        dialog.show();
     }
 
     private class FileListAdapter extends BaseListAdapter<Item> {
@@ -633,7 +643,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
                             Glide.with(context).load(Utils.getApkThumbnail(context, path)).into(iv);
                         } else if (Utils.isImage(path) || Utils.isVideo(path)) {
                             Glide.with(context).setDefaultRequestOptions(new RequestOptions()
-                                    .error(R.drawable.fs_file)).load(path).into(iv);                            
+                                    .error(R.drawable.fs_file)).load(path).into(iv);
                         } else if (Utils.isAudio(path)) {
                             Glide.with(context).load(R.drawable.fs_audio).into(iv);
                         } else if (Utils.isText(path)) {
@@ -688,7 +698,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             };
         }
     }
-    
+
     void clearSelectedFileList() {
         for (Item item : selectItemList) {
             item.checked = false;
@@ -697,7 +707,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         switchSelectAllState(false);
         updateViews();
     }
-    
+
     private void updateViews() {
         File file = new File(currentPath == null ? "" : currentPath);
         fsTvOk.setEnabled(!selectItemList.isEmpty() || (selectionMode != FileSelector.FILES_ONLY && file.exists()));
@@ -705,7 +715,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         adapter.notifyDataSetChanged();
         selectedItemDialog.updateList(selectItemList);
     }
-    
+
     void updateSelectedFileList(Item item, boolean needNotify) {
         if (item.checked) {
             if (!selectItemList.contains(item)) {
@@ -729,14 +739,14 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
             boolean b = true;
             for (Item it : itemList) {
                 if ((selectionMode == FileSelector.FILES_AND_DIRECTORIES || (selectionMode == FileSelector.FILES_ONLY && it.file.isFile()) ||
-                (selectionMode == FileSelector.DIRECTORIES_ONLY && it.file.isDirectory())) && !selectItemList.contains(it)) {
+                        (selectionMode == FileSelector.DIRECTORIES_ONLY && it.file.isDirectory())) && !selectItemList.contains(it)) {
                     b = false;
                 }
             }
             switchSelectAllState(b);
         }
     }
-    
+
     private void showPopupWindow() {
         ListView lv = (ListView) View.inflate(this, R.layout.fs_listview, null);
         ArrayList<String> items = new ArrayList<>();
@@ -747,7 +757,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         final PopupWindow popupWindow = new PopupWindow(lv, UiUtils.getDisplayScreenWidth(), height);
         popupWindow.setBackgroundDrawable(ContextCompat.getDrawable(this, R.drawable.fs_popun_menu_bg));
         popupWindow.setFocusable(true);
-        popupWindow.setOutsideTouchable(true);    
+        popupWindow.setOutsideTouchable(true);
         popupWindow.setOnDismissListener(() -> {
             //pop消失，去掉蒙层
             fsMaskView.clearAnimation();
@@ -755,8 +765,8 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         });
         lv.setOnItemClickListener((parent, view, position, id) -> {
             popupWindow.dismiss();
-            switch(position) {
-                case 0:	
+            switch (position) {
+                case 0:
                     showInputDialog(textHolder.getText(TextHolder.NEW_FOLDER), null, null, text -> {
                         File file = new File(currentPath, text);
                         //不存在才新建
@@ -786,7 +796,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         fsMaskView.startAnimation(alphaAnimation);
         popupWindow.showAsDropDown(fsLayoutTitle, 0, 1);
     }
-    
+
     private class PopupMenuAdapter extends BaseListAdapter<String> {
         PopupMenuAdapter(Context context, List<String> data) {
             super(context, data);
@@ -796,7 +806,7 @@ public class SelectFileActivity extends Activity implements AdapterView.OnItemCl
         BaseHolder<String> getHolder(int position) {
             return new BaseHolder<String>() {
                 TextView tv;
-                
+
                 @Override
                 void setData(String data, int position) {
                     if (position == 1) {
